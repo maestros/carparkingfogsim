@@ -41,17 +41,18 @@ import org.fog.utils.distribution.DeterministicDistribution;
  *
  */
 public class CarParkingFog {
-	static List<FogDevice> fogDevices = new ArrayList<FogDevice>();
-	static List<Sensor> sensors = new ArrayList<Sensor>();
-	static List<Actuator> actuators = new ArrayList<Actuator>();
-	static int numOfAreas = 1;
-	static int numOfCamerasPerArea = 4;
-	
+	private static List<FogDevice> fogDevices = new ArrayList<FogDevice>();
+	private static List<Sensor> sensors = new ArrayList<Sensor>();
+	private static List<Actuator> actuators = new ArrayList<Actuator>();
+	private static int NUMBER_OF_AREAS = 1;
+	private static int SENSORS_PER_AREA = 48;
+	private static int CAMERAS_PER_AREA = 2;
+
 	private static boolean CLOUD = false;
 	
 	public static void main(String[] args) {
 
-		Log.printLine("Starting Simulation...");
+		Log.printLine("Starting Car Parking Simulation...");
 
 		try {
 			Log.disable();
@@ -74,10 +75,9 @@ public class CarParkingFog {
 			
 			ModuleMapping moduleMapping = ModuleMapping.createModuleMapping(); // initializing a module mapping
 			for(FogDevice device : fogDevices){
-				if(device.getName().startsWith("m")){ // names of all Smart Cameras start with 'm' 
-					moduleMapping.addModuleToDevice("motion_detector", device.getName());  // fixing 1 instance of the Motion Detector module to each Smart Camera
-				}
+				moduleMapping.addModuleToDevice("motion_detector", device.getName());
 			}
+
 			moduleMapping.addModuleToDevice("user_interface", "cloud"); // fixing instances of User Interface module in the Cloud
 			if(CLOUD){
 				// if the mode of deployment is cloud-based
@@ -85,8 +85,7 @@ public class CarParkingFog {
 				moduleMapping.addModuleToDevice("object_tracker", "cloud"); // placing all instances of Object Tracker module in the Cloud
 			}
 			
-			controller = new Controller("master-controller", fogDevices, sensors, 
-					actuators);
+			controller = new Controller("master-controller", fogDevices, sensors, actuators);
 			
 			controller.submitApplication(application, 
 					(CLOUD)?(new ModulePlacementMapping(fogDevices, application, moduleMapping))
@@ -118,37 +117,33 @@ public class CarParkingFog {
 		proxy.setParentId(cloud.getId());
 		proxy.setUplinkLatency(100); // latency of connection between proxy server and cloud is 100 ms
 		fogDevices.add(proxy);
-		for(int i=0;i<numOfAreas;i++){
+		for(int i=0;i<NUMBER_OF_AREAS;i++){
 			addArea(i+"", userId, appId, proxy.getId());
 		}
 	}
 
 	private static FogDevice addArea(String id, int userId, String appId, int parentId){
-		FogDevice router = createFogDevice("d-"+id, 2800, 4000, 10000, 10000, 1, 0.0, 107.339, 83.4333);
+		FogDevice router = createFogDevice("router-"+id, 2800, 4000, 10000, 10000, 1, 0.0, 107.339, 83.4333);
 		fogDevices.add(router);
 		router.setUplinkLatency(2); // latency of connection between router and proxy server is 2 ms
-		for(int i=0;i<numOfCamerasPerArea;i++){
+		for(int i=0;i<SENSORS_PER_AREA;i++){
 			String mobileId = id+"-"+i;
-			FogDevice camera = addCamera(mobileId, userId, appId, router.getId()); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
-			camera.setUplinkLatency(2); // latency of connection between camera and router is 2 ms
-			fogDevices.add(camera);
+			FogDevice irSensor = addIRSensor(mobileId, userId, appId, router.getId()); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
+			irSensor.setUplinkLatency(2); // latency of connection between IR-Sensor and router is 2 ms
+			fogDevices.add(irSensor);
 		}
 		router.setParentId(parentId);
 		return router;
 	}
 	
-	private static FogDevice addCamera(String id, int userId, String appId, int parentId){
-		FogDevice camera = createFogDevice("m-"+id, 500, 1000, 10000, 10000, 3, 0, 87.53, 82.44);
-		camera.setParentId(parentId);
-		Sensor sensor = new Sensor("s-"+id, "CAMERA", userId, appId, new DeterministicDistribution(5)); // inter-transmission time of camera (sensor) follows a deterministic distribution
+	private static FogDevice addIRSensor(String id, int userId, String appId, int parentId){
+		FogDevice irSensor = createFogDevice("ir-"+id, 500, 1000, 10000, 10000, 3, 0, 87.53, 82.44);
+		irSensor.setParentId(parentId);
+		Sensor sensor = new Sensor("s-"+id, "IR-SENSOR", userId, appId, new DeterministicDistribution(5)); // inter-transmission time of camera (sensor) follows a deterministic distribution
 		sensors.add(sensor);
-		Actuator ptz = new Actuator("ptz-"+id, userId, appId, "PTZ_CONTROL");
-		actuators.add(ptz);
-		sensor.setGatewayDeviceId(camera.getId());
-		sensor.setLatency(1.0);  // latency of connection between camera (sensor) and the parent Smart Camera is 1 ms
-		ptz.setGatewayDeviceId(camera.getId());
-		ptz.setLatency(1.0);  // latency of connection between PTZ Control and the parent Smart Camera is 1 ms
-		return camera;
+		sensor.setGatewayDeviceId(irSensor.getId());
+		sensor.setLatency(1.0);  // latency of connection between IR Sensor and the parent Smart Camera is 1 ms
+		return irSensor;
 	}
 	
 	/**
