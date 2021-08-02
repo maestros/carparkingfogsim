@@ -132,6 +132,14 @@ public class CarParkingFog {
 			irSensor.setUplinkLatency(2); // latency of connection between IR-Sensor and router is 2 ms
 			fogDevices.add(irSensor);
 		}
+		
+		for(int i=0;i<CAMERAS_PER_AREA;i++){
+			String mobileId = id+"-"+i;
+			FogDevice camera = addCamera(mobileId, userId, appId, router.getId()); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
+			camera.setUplinkLatency(2); // latency of connection between camera and router is 2 ms
+			fogDevices.add(camera);
+		}
+
 		router.setParentId(parentId);
 		return router;
 	}
@@ -144,6 +152,20 @@ public class CarParkingFog {
 		sensor.setGatewayDeviceId(irSensor.getId());
 		sensor.setLatency(1.0);  // latency of connection between IR Sensor and the parent Smart Camera is 1 ms
 		return irSensor;
+	}
+	
+	private static FogDevice addCamera(String id, int userId, String appId, int parentId){
+		FogDevice camera = createFogDevice("camera-"+id, 500, 1000, 10000, 10000, 3, 0, 87.53, 82.44);
+		camera.setParentId(parentId);
+		Sensor sensor = new Sensor("s-"+id, "CAMERA-SENSOR", userId, appId, new DeterministicDistribution(5)); // inter-transmission time of camera (sensor) follows a deterministic distribution
+		sensors.add(sensor);
+		Actuator ptz = new Actuator("ptz-"+id, userId, appId, "PTZ_CONTROL");
+		actuators.add(ptz);
+		sensor.setGatewayDeviceId(camera.getId());
+		sensor.setLatency(1.0);  // latency of connection between camera (sensor) and the parent Smart Camera is 1 ms
+		ptz.setGatewayDeviceId(camera.getId());
+		ptz.setLatency(1.0);  // latency of connection between PTZ Control and the parent Smart Camera is 1 ms
+		return camera;
 	}
 	
 	/**
