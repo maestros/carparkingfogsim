@@ -44,7 +44,10 @@ public class CarParkingFogSimulation {
 	private static List<FogDevice> fogDevices = new ArrayList<FogDevice>();
 	private static List<Sensor> sensors = new ArrayList<Sensor>();
 	private static List<Actuator> actuators = new ArrayList<Actuator>();
-	private static final int NUMBER_OF_AREAS = 2;
+	private static List<FogDevice> edgeNodes = new ArrayList<FogDevice>();
+	
+	private static final int NUMBER_OF_EDGE_NODES = 4;
+	private static final int NUMBER_OF_AREAS = 4;
 	private static final int SENSORS_PER_AREA = 4;
 	private static final int CAMERAS_PER_AREA = 2;
 
@@ -72,9 +75,12 @@ public class CarParkingFogSimulation {
 			FogDevice cloud = createCloudEnvironment();
 			FogDevice gateway = createLocalGateway(cloud.getId());
 			
+			createEdgeNodes(gateway.getId());
+			
 			for(int i=1; i<=NUMBER_OF_AREAS; i++) {
 				String areaName = String.format("area#%s", i);
-				createFogDevices(areaName, gateway.getId(), broker.getId(), appId);
+				FogDevice edgeNode = edgeNodes.get(i%NUMBER_OF_EDGE_NODES);
+				createArea(areaName, edgeNode.getId(), broker.getId(), appId);
 			}
 
 			Controller controller = null;
@@ -125,35 +131,39 @@ public class CarParkingFogSimulation {
 		return proxy;
 	}
 	
-	/**
-	 * Creates the fog devices in the physical topology of the simulation.
-	 * @param userId
-	 * @param appId
-	 */
-	private static void createFogDevices(String areaName, int level, int userId, String appId) {
-		addArea(areaName, userId, appId, level);
+	private static void createEdgeNodes(int parentId) {
+		for (int i=1; i <= NUMBER_OF_EDGE_NODES; i++) {
+			FogDevice edgeNode = createEdgeNode("EdgeNode#"+i, parentId);
+			edgeNodes.add(edgeNode);
+		}
 	}
-
-	private static FogDevice addArea(String id, int userId, String appId, int parentId){
+	
+	private static void createArea(String areaName, int parentId, int userId, String appId) {
+		addArea(areaName, userId, appId, parentId);
+	}
+	
+	private static FogDevice createEdgeNode(String id, int parentId) {
 		FogDevice edgeNode = createFogDevice("edge-node-"+id, 2800, 4000, 10000, 10000, 1, 0.0, 107.339, 83.4333);
 		fogDevices.add(edgeNode);
 		edgeNode.setUplinkLatency(2); // latency of connection between edge node and gateway is 2 ms
+		edgeNode.setParentId(parentId);
+		return edgeNode;
+	}
+
+	private static void addArea(String id, int userId, String appId, int edgeNodeId){
 		for(int i=1; i<=SENSORS_PER_AREA; i++){
 			String mobileId = id+"-"+i;
-			FogDevice irSensor = addIRSensor(mobileId, userId, appId, edgeNode.getId()); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
+			FogDevice irSensor = addIRSensor(mobileId, userId, appId, edgeNodeId); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
 			irSensor.setUplinkLatency(2); // latency of connection between IR-Sensor and edge node is 2 ms
 			fogDevices.add(irSensor);
 		}
 		
 		for(int i=1; i<=CAMERAS_PER_AREA; i++){
 			String mobileId = id+"-"+i;
-			FogDevice camera = addCamera(mobileId, userId, appId, edgeNode.getId()); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
+			FogDevice camera = addCamera(mobileId, userId, appId, edgeNodeId); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
 			camera.setUplinkLatency(2); // latency of connection between camera and edge node is 2 ms
 			fogDevices.add(camera);
 		}
-
-		edgeNode.setParentId(parentId);
-		return edgeNode;
 	}
 	
 	private static FogDevice addIRSensor(String id, int userId, String appId, int parentId){
