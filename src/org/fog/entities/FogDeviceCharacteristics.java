@@ -16,6 +16,9 @@ import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.lists.HostList;
 import org.cloudbus.cloudsim.lists.PeList;
+import org.fog.test.perfeval.CarParkingFogSimulation.ArchType;
+import org.fog.test.perfeval.CarParkingFogSimulation.OsType;
+import org.fog.test.perfeval.CarParkingFogSimulation.VmmType;
 import org.fog.utils.GeoCoverage;
 
 public class FogDeviceCharacteristics extends DatacenterCharacteristics{
@@ -107,18 +110,33 @@ public class FogDeviceCharacteristics extends DatacenterCharacteristics{
 			double costPerMem,
 			double costPerStorage,
 			double costPerBw) {
-		super(architecture, os, vmm, new ArrayList<Host>(){{add(host);}} , timeZone, costPerSec, costPerMem, costPerStorage, costPerBw);
+		this(ArchType.valueOf(architecture), OsType.valueOf(os), VmmType.valueOf(vmm),
+				host, timeZone, costPerSec, costPerMem, costPerStorage, costPerBw);
+	}
+	
+	public FogDeviceCharacteristics(
+			ArchType architecture,
+			OsType os,
+			VmmType vmm,
+			final Host host,
+			double timeZone,
+			double costPerSec,
+			double costPerMem,
+			double costPerStorage,
+			double costPerBw) {
+		super(architecture.toString(), os.toString(), vmm.toString(),
+				new ArrayList<Host>(){{add(host);}} , timeZone, costPerSec, costPerMem, costPerStorage, costPerBw);
 		setHostList(new ArrayList<Host>(){{add(host);}});
 		setId(-1);
-		setArchitecture(architecture);
-		setOs(os);
+		setArchitecture(architecture.toString());
+		setOs(os.toString());
 		setHostList(hostList);
 		setAllocationPolicy(allocationPolicy);
 		setCostPerSecond(costPerSec);
 
 		setTimeZone(0.0);
 
-		setVmm(vmm);
+		setVmm(vmm.toString());
 		setCostPerMem(costPerMem);
 		setCostPerStorage(costPerStorage);
 		setCostPerBw(costPerBw);

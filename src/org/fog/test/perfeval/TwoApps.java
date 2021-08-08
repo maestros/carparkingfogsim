@@ -29,6 +29,9 @@ import org.fog.placement.ModuleMapping;
 import org.fog.placement.ModulePlacementMapping;
 import org.fog.policy.AppModuleAllocationPolicy;
 import org.fog.scheduler.StreamOperatorScheduler;
+import org.fog.test.perfeval.CarParkingFogSimulation.ArchType;
+import org.fog.test.perfeval.CarParkingFogSimulation.OsType;
+import org.fog.test.perfeval.CarParkingFogSimulation.VmmType;
 import org.fog.utils.FogLinearPowerModel;
 import org.fog.utils.FogUtils;
 import org.fog.utils.TimeKeeper;
@@ -229,9 +232,9 @@ public class TwoApps {
 		List<Host> hostList = new ArrayList<Host>();
 		hostList.add(host);
 
-		String arch = "x86"; // system architecture
-		String os = "Linux"; // operating system
-		String vmm = "Xen";
+		ArchType arch = ArchType.x64; // system architecture
+		OsType os = OsType.Linux; // operating system
+		VmmType vmm = VmmType.Xen;
 		double time_zone = 10.0; // time zone this resource located
 		double cost = 3.0; // the cost of using processing in this resource
 		double costPerMem = 0.05; // the cost of using memory in this resource

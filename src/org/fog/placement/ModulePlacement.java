@@ -61,6 +61,7 @@ public abstract class ModulePlacement {
 		} else {
 			System.err.println("Module "+module.getName()+" cannot be created on device "+device.getName());
 			System.err.println("Terminating");
+			new Throwable().printStackTrace();
 			return false;
 		}
 	}

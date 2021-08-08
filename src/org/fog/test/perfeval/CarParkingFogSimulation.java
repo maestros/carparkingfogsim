@@ -11,9 +11,12 @@ import org.cloudbus.cloudsim.Pe;
 import org.cloudbus.cloudsim.Storage;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.power.PowerHost;
+import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
+import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import org.cloudbus.cloudsim.sdn.overbooking.BwProvisionerOverbooking;
 import org.cloudbus.cloudsim.sdn.overbooking.PeProvisionerOverbooking;
+import org.cloudbus.cloudsim.sdn.overbooking.VmSchedulerTimeSharedOverbookingEnergy;
 import org.fog.application.AppEdge;
 import org.fog.application.AppLoop;
 import org.fog.application.Application;
@@ -30,6 +33,9 @@ import org.fog.placement.ModulePlacementEdgewards;
 import org.fog.placement.ModulePlacementMapping;
 import org.fog.policy.AppModuleAllocationPolicy;
 import org.fog.scheduler.StreamOperatorScheduler;
+import org.fog.test.perfeval.CarParkingFogSimulation.ArchType;
+import org.fog.test.perfeval.CarParkingFogSimulation.OsType;
+import org.fog.test.perfeval.CarParkingFogSimulation.VmmType;
 import org.fog.utils.FogLinearPowerModel;
 import org.fog.utils.FogUtils;
 import org.fog.utils.TimeKeeper;
@@ -46,22 +52,22 @@ public class CarParkingFogSimulation {
 	private static List<Actuator> actuators = new ArrayList<Actuator>();
 	private static List<FogDevice> edgeNodes = new ArrayList<FogDevice>();
 	
-	private static final int NUMBER_OF_EDGE_NODES = 4;
+	private static final int NUMBER_OF_EDGE_NODES = 3;
 	private static final int NUMBER_OF_AREAS = 4;
-	private static final int SENSORS_PER_AREA = 4;
+	private static final int SENSORS_PER_AREA = 2;
 	private static final int CAMERAS_PER_AREA = 2;
 
-	private static final boolean CLOUD = true;
+	private static final boolean CLOUD = false;
 	
 	public static void main(String[] args) {
 
-		Log.printLine("Starting Car Parking Simulation...");
+		Log.printLine("Starting Car Parking FEC Simulation...");
 
 		try {
 			Log.disable();
 			int num_user = 1; // number of cloud users
 			Calendar calendar = Calendar.getInstance();
-			boolean trace_flag = false; // mean trace events
+			boolean trace_flag = true; // mean trace events
 
 			CloudSim.init(num_user, calendar, trace_flag);
 
@@ -96,7 +102,7 @@ public class CarParkingFogSimulation {
 				moduleMapping.addModuleToDevice("object_detector", "cloud"); // placing all instances of Object Detector module in the Cloud
 				moduleMapping.addModuleToDevice("object_tracker", "cloud"); // placing all instances of Object Tracker module in the Cloud
 			}
-			
+
 			controller = new Controller("master-controller", fogDevices, sensors, actuators);
 			
 			controller.submitApplication(application, 
@@ -109,7 +115,7 @@ public class CarParkingFogSimulation {
 
 			CloudSim.stopSimulation();
 
-			Log.printLine("VRGame finished!");
+			Log.printLine("Car Parking FEC Simulation finished!");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.printLine("Unwanted errors happen");
@@ -124,7 +130,8 @@ public class CarParkingFogSimulation {
 	}
 	
 	private static FogDevice createLocalGateway(int parentId) {
-		FogDevice proxy = createFogDevice("local-network-gataway", 2800, 4000, 10000, 10000, 1, 0.0, 107.339, 83.4333);
+		FogDevice proxy = createFogDevice("local-network-gataway", 2800, 4000, 10000, 10000,
+				1, 4, 107.339, 83.4333);
 		proxy.setParentId(parentId);
 		proxy.setUplinkLatency(120); // latency of connection between GW and Cloud is 120 ms
 		fogDevices.add(proxy);
@@ -143,7 +150,8 @@ public class CarParkingFogSimulation {
 	}
 	
 	private static FogDevice createEdgeNode(String id, int parentId) {
-		FogDevice edgeNode = createFogDevice("edge-node-"+id, 2800, 4000, 10000, 10000, 1, 0.0, 107.339, 83.4333);
+		FogDevice edgeNode = createFogDevice("edge-node-"+id, 2800, 4000, 10000, 10000,
+				1, 2, 107.339, 83.4333);
 		fogDevices.add(edgeNode);
 		edgeNode.setUplinkLatency(2); // latency of connection between edge node and gateway is 2 ms
 		edgeNode.setParentId(parentId);
@@ -160,34 +168,66 @@ public class CarParkingFogSimulation {
 		
 		for(int i=1; i<=CAMERAS_PER_AREA; i++){
 			String mobileId = id+"-"+i;
-			FogDevice camera = addCamera(mobileId, userId, appId, edgeNodeId); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
+			FogDevice camera = addNonPTZCamera(mobileId, userId, appId, edgeNodeId); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
 			camera.setUplinkLatency(2); // latency of connection between camera and edge node is 2 ms
 			fogDevices.add(camera);
 		}
 	}
 	
 	private static FogDevice addIRSensor(String id, int userId, String appId, int parentId){
-		FogDevice irSensor = createFogDevice("ir-sensor-"+id, 500, 1000, 10000, 10000, 3, 0, 87.53, 82.44);
+		FogDevice irSensor = createFogDevice("ir-sensor-"+id, 500, 1000, 10000, 10000,
+				3, 1, 87.53, 82.44);
 		irSensor.setParentId(parentId);
 		Sensor sensor = new Sensor("s-"+id, SensorType.IR_SENSOR.toString(), userId, appId, new DeterministicDistribution(5)); // inter-transmission time of camera (sensor) follows a deterministic distribution
 		sensors.add(sensor);
 		sensor.setGatewayDeviceId(irSensor.getId());
 		sensor.setLatency(1.0);  // latency of connection between IR Sensor and the parent Smart Camera is 1 ms
+		//irSensor.setTotalCost(1);
 		return irSensor;
 	}
 	
-	private static FogDevice addCamera(String id, int userId, String appId, int parentId){
-		FogDevice camera = createFogDevice("camera-"+id, 500, 1000, 10000, 10000, 3, 0, 87.53, 82.44);
+	private static FogDevice addNonPTZCamera(String id, int userId, String appId, int parentId){
+		FogDevice camera = createFogDevice("camera-"+id, 500, 1000, 10000, 10000,
+				3, 2, 87.53, 82.44);
 		camera.setParentId(parentId);
 		Sensor sensor = new Sensor("s-"+id, SensorType.CAMERA.toString(), userId, appId, new DeterministicDistribution(5)); // inter-transmission time of camera (sensor) follows a deterministic distribution
 		sensors.add(sensor);
-		Actuator ptz = new Actuator("ptz-"+id, userId, appId, "PTZ_CONTROL");
-		actuators.add(ptz);
 		sensor.setGatewayDeviceId(camera.getId());
 		sensor.setLatency(1.0);  // latency of connection between camera (sensor) and the parent Smart Camera is 1 ms
-		ptz.setGatewayDeviceId(camera.getId());
-		ptz.setLatency(1.0);  // latency of connection between PTZ Control and the parent Smart Camera is 1 ms
 		return camera;
+	}
+
+	protected static FogDevice createFogDevice(String name, double mips, int ram, long strg, double bPw, double iPw, double costPerMips,
+			double costPerMem, double costPerStorage, double costPerBw) {
+		List<Pe> processingElementsList = new ArrayList<Pe>();
+		processingElementsList.add(new Pe(0, new PeProvisionerSimple(mips)));
+
+		PowerHost host = new PowerHost(
+				FogUtils.generateEntityId(),
+				new RamProvisionerSimple(ram),
+				new BwProvisionerSimple(Long.MAX_VALUE),
+				strg,
+				processingElementsList,
+				new VmSchedulerTimeSharedOverbookingEnergy(processingElementsList),
+				new FogLinearPowerModel(bPw, iPw)
+			);
+
+		List<Host> hostList = new ArrayList<Host>();
+		hostList.add(host);
+
+		FogDeviceCharacteristics characteristics = new FogDeviceCharacteristics(ArchType.x64,
+				OsType.Linux, VmmType.Xen, host, 0.0,
+				costPerMips, costPerMem, costPerStorage, costPerBw);
+		
+		try {
+			
+			return new FogDevice(name, characteristics, 
+					new AppModuleAllocationPolicy(hostList),
+					new LinkedList<Storage>(), 10, 0, 0, 0, costPerMips);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 	
 	/**
@@ -204,7 +244,8 @@ public class CarParkingFogSimulation {
 	 * @return
 	 */
 	private static FogDevice createFogDevice(String nodeName, long mips,
-			int ram, long upBw, long downBw, int level, double ratePerMips, double busyPower, double idlePower) {
+			int ram, long upBw, long downBw, int level,
+			double ratePerMips, double busyPower, double idlePower) {
 		
 		List<Pe> peList = new ArrayList<Pe>();
 
@@ -213,12 +254,11 @@ public class CarParkingFogSimulation {
 
 		int hostId = FogUtils.generateEntityId();
 		long storage = 1000000; // host storage
-		int bw = 10000;
 
 		PowerHost host = new PowerHost(
 				hostId,
 				new RamProvisionerSimple(ram),
-				new BwProvisionerOverbooking(bw),
+				new BwProvisionerOverbooking(Long.MAX_VALUE),
 				storage,
 				peList,
 				new StreamOperatorScheduler(peList),
@@ -228,26 +268,25 @@ public class CarParkingFogSimulation {
 		List<Host> hostList = new ArrayList<Host>();
 		hostList.add(host);
 
-		String arch = "x86"; // system architecture
-		String os = "Linux"; // operating system
-		String vmm = "Xen";
 		double time_zone = 10.0; // time zone this resource located
 		double cost = 3.0; // the cost of using processing in this resource
 		double costPerMem = 0.05; // the cost of using memory in this resource
 		double costPerStorage = 0.001; // the cost of using storage in this
 										// resource
-		double costPerBw = 0.0; // the cost of using bw in this resource
+		double costPerBw = 2.0; // the cost of using bw in this resource
 		LinkedList<Storage> storageList = new LinkedList<Storage>(); // we are not adding SAN
 													// devices by now
 
 		FogDeviceCharacteristics characteristics = new FogDeviceCharacteristics(
-				arch, os, vmm, host, time_zone, cost, costPerMem,
+				ArchType.x86, OsType.Linux, VmmType.Xen,
+				host, time_zone, cost, costPerMem,
 				costPerStorage, costPerBw);
 
 		FogDevice fogdevice = null;
 		try {
 			fogdevice = new FogDevice(nodeName, characteristics, 
-					new AppModuleAllocationPolicy(hostList), storageList, 10, upBw, downBw, 0, ratePerMips);
+					new AppModuleAllocationPolicy(hostList),
+					storageList, 10, upBw, downBw, 0, ratePerMips);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -266,9 +305,7 @@ public class CarParkingFogSimulation {
 	private static Application createApplication(String appId, int userId){
 		
 		Application application = Application.createApplication(appId, userId);
-		/*
-		 * Adding modules (vertices) to the application model (directed graph)
-		 */
+
 		application.addAppModule("object_detector", 10);
 		application.addAppModule("motion_detector", 10);
 		application.addAppModule("object_tracker", 10);
@@ -282,7 +319,6 @@ public class CarParkingFogSimulation {
 		application.addAppEdge("motion_detector", "object_detector", 2000, 2000, "MOTION_VIDEO_STREAM", Tuple.UP, AppEdge.MODULE); // adding edge from Motion Detector to Object Detector module carrying tuples of type MOTION_VIDEO_STREAM
 		application.addAppEdge("object_detector", "user_interface", 500, 2000, "DETECTED_OBJECT", Tuple.UP, AppEdge.MODULE); // adding edge from Object Detector to User Interface module carrying tuples of type DETECTED_OBJECT
 		application.addAppEdge("object_detector", "object_tracker", 1000, 100, "OBJECT_LOCATION", Tuple.UP, AppEdge.MODULE); // adding edge from Object Detector to Object Tracker module carrying tuples of type OBJECT_LOCATION
-		application.addAppEdge("object_tracker", "PTZ_CONTROL", 100, 28, 100, "PTZ_PARAMS", Tuple.DOWN, AppEdge.ACTUATOR); // adding edge from Object Tracker to PTZ CONTROL (actuator) carrying tuples of type PTZ_PARAMS
 		
 		/*
 		 * Defining the input-output relationships (represented by selectivity) of the application modules. 
@@ -311,6 +347,51 @@ public class CarParkingFogSimulation {
 		
 		SensorType(String sensorName) {
 			this.name = sensorName;
+		}
+		
+		public String toString() {
+			return name;
+		}
+	}
+	
+	public enum OsType {
+		Linux("linux"),
+		WINDOWS("WINDOWS");
+		
+		private String name;
+		
+		OsType(String osType) {
+			this.name = osType;
+		}
+		
+		public String toString() {
+			return name;
+		}
+	}
+	
+	public enum VmmType {
+		Xen("Xen"),
+		OPENSTACK("OpenStack");
+		
+		private String name;
+		
+		VmmType(String vmmType) {
+			this.name = vmmType;
+		}
+		
+		public String toString() {
+			return name;
+		}
+	}
+	
+	public enum ArchType {
+		x86("x86"),
+		x64("x64");
+		
+		private String name;
+		
+		ArchType(String archType) {
+			this.name = archType;
 		}
 		
 		public String toString() {

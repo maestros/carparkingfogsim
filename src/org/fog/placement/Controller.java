@@ -1,7 +1,9 @@
 package org.fog.placement;
 
+import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +25,10 @@ import org.fog.utils.TimeKeeper;
 
 public class Controller extends SimEntity{
 	
+	private static final String NEWLINE = "\n";
+	private static final String COLUMN_SEPERATOR = "|";
+	private static final int MATRIX_SIZE = 83;
+
 	public static boolean ONLY_CLOUD = false;
 		
 	private List<FogDevice> fogDevices;
@@ -101,7 +107,8 @@ public class Controller extends SimEntity{
 			CloudSim.stopSimulation();
 			printTimeDetails();
 			printPowerDetails();
-			printCostDetails();
+			printCloudCostDetails();
+			printFogDeviceCostDetails();
 			printNetworkUsageDetails();
 			System.exit(0);
 			break;
@@ -110,7 +117,8 @@ public class Controller extends SimEntity{
 	}
 	
 	private void printNetworkUsageDetails() {
-		System.out.println("Total network usage = "+NetworkUsageMonitor.getNetworkUsage()/Config.MAX_SIMULATION_TIME);		
+		System.out.println("Total network usage = " 
+				+ NetworkUsageMonitor.getNetworkUsage() / Config.MAX_SIMULATION_TIME);		
 	}
 
 	private FogDevice getCloud(){
@@ -120,14 +128,160 @@ public class Controller extends SimEntity{
 		return null;
 	}
 	
-	private void printCostDetails(){
-		System.out.println("Cost of execution in cloud = "+getCloud().getTotalCost());
+	private void printCloudCostDetails(){
+		System.out.println("Cost of execution in cloud = " + getCloud().getTotalCost());
 	}
 	
 	private void printPowerDetails() {
-		for(FogDevice fogDevice : getFogDevices()){
-			System.out.println(fogDevice.getName() + " : Energy Consumed = "+fogDevice.getEnergyConsumption());
+		double total = 0;
+		int idColumnSize = 5;
+		int levelColumnSize = 5;
+		int nameColumnSize = 35;
+		int energyColumnSize = 35;
+		StringBuilder tableValue = new StringBuilder();
+		
+		Map<String, Integer> columnNames = new LinkedHashMap<String, Integer>();
+		columnNames.put("ID", idColumnSize);
+		columnNames.put("LEVEL", idColumnSize);
+		columnNames.put("DEVICE NAME", nameColumnSize);
+		columnNames.put("ENERGY IN JOULES", energyColumnSize);
+		
+		for(FogDevice fogDevice : getFogDevices()) {
+			String id = "" + fogDevice.getId();
+			String level = "" + fogDevice.getLevel();
+			String name = fogDevice.getName();
+			String energy = doubleToString(fogDevice.getEnergyConsumption());
+			
+			tableValue.append(COLUMN_SEPERATOR);
+			tableValue.append(centerString(idColumnSize, id));
+
+			tableValue.append(COLUMN_SEPERATOR);
+			tableValue.append(centerString(levelColumnSize, level));
+			
+			tableValue.append(COLUMN_SEPERATOR);
+			tableValue.append(centerString(nameColumnSize, name));
+
+			tableValue.append(COLUMN_SEPERATOR);
+			tableValue.append(centerString(energyColumnSize, energy));
+			tableValue.append(COLUMN_SEPERATOR);
+			tableValue.append(NEWLINE);
+			
+			total += fogDevice.getEnergyConsumption();
 		}
+		
+		tableValue.append(createCharSequence('-'));
+		tableValue.append(COLUMN_SEPERATOR);
+		
+		String totalEnergy = "TOTAL ENERGY IN JOULES = " + doubleToString(total);
+		tableValue.append(centerString(MATRIX_SIZE, totalEnergy));
+		tableValue.append(COLUMN_SEPERATOR);
+		tableValue.append(NEWLINE);
+		
+		printMatrix("ENERGY", tableValue.toString(), columnNames);
+	}
+	
+	private void printFogDeviceCostDetails() {
+		double total = 0;
+		int idColumnSize = 5;
+		int nameColumnSize = 38;
+		int costColumnSize = 38;
+		StringBuilder tableValue = new StringBuilder();
+		
+		Map<String, Integer> columnNames = new LinkedHashMap<String, Integer>();
+		columnNames.put("ID", idColumnSize);
+		columnNames.put("NAME", nameColumnSize);
+		columnNames.put("COST", costColumnSize);
+		
+		for(FogDevice fogDevice : getFogDevices()) {
+			String id = Integer.toString(fogDevice.getId());
+			String name = fogDevice.getName();
+			String cost = doubleToString(fogDevice.getTotalCost());
+			
+			tableValue.append(COLUMN_SEPERATOR);
+			tableValue.append(centerString(idColumnSize, id));
+			
+			tableValue.append(COLUMN_SEPERATOR);
+			tableValue.append(centerString(nameColumnSize, name));
+
+			tableValue.append(COLUMN_SEPERATOR);
+			tableValue.append(centerString(costColumnSize, cost));
+			tableValue.append(COLUMN_SEPERATOR);
+			tableValue.append(NEWLINE);
+			
+			total += fogDevice.getTotalCost();
+		}
+		String costStr = doubleToString(total);
+		
+		tableValue.append(createCharSequence('-'));
+		tableValue.append(COLUMN_SEPERATOR);
+		
+		String totalEnergy = "TOTAL COST = " + costStr;
+		tableValue.append(centerString(MATRIX_SIZE, totalEnergy));
+		tableValue.append(COLUMN_SEPERATOR);
+		tableValue.append(NEWLINE);
+		
+		printMatrix("COST OF FEC DEVICES", tableValue.toString(), columnNames);
+	}
+	
+	/**
+	 * Prints a results matrix.
+	 */
+	private void printMatrix(String title, String content, Map<String, Integer> subtitles) {
+		System.out.println(NEWLINE);
+		printCharSequence('=');
+		System.out.println(COLUMN_SEPERATOR + centerString(MATRIX_SIZE, title) + COLUMN_SEPERATOR);
+		printCharSequence('-');
+		
+		if(subtitles != null) {
+			for(String str : subtitles.keySet()) {
+				int size = subtitles.get(str);
+				System.out.print(COLUMN_SEPERATOR + centerString(size, str));
+			}
+			System.out.println(COLUMN_SEPERATOR);
+			printCharSequence('-');
+		}
+		
+		System.out.print(content);
+		printCharSequence('=');
+	}
+
+	public static String centerString(int width, String str) {
+	    return String.format("%-" + width  + "s",
+	    		String.format("%" + (str.length() + (width - str.length()) / 2) + "s", str));
+	}
+	
+	/**
+	 * Converts and formats a given double number to string.
+	 * 
+	 * @param size total string size
+	 * @param dc number or decimal places
+	 * @param value the value to be converted
+	 * @return the string
+	 */
+	public static String doubleToString(double value) {
+		String decimal = String.format("%8c", ' ').replaceAll("\\ ", "\\" + '0');
+		DecimalFormat df = new DecimalFormat("0." + decimal);
+		String result = df.format(value);
+		return String.format("%15s", result);
+	}
+
+	private String createCharSequence(char character) {
+		StringBuilder str = new StringBuilder();
+
+		for (int i = 0; i < MATRIX_SIZE; i++) {
+			str.append(character);
+		}
+		str.append(character);
+		str.append(NEWLINE);
+
+		return str.toString();
+	}
+	
+	private void printCharSequence(char character) {
+		for (int i = 0; i < MATRIX_SIZE; i++) {
+		    System.out.print(character);
+		}
+		System.out.println(character);
 	}
 
 	private String getStringForLoopId(int loopId){
