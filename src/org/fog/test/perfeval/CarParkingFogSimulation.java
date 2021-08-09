@@ -5,6 +5,8 @@ import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.sound.midi.Soundbank;
+
 import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Pe;
@@ -83,19 +85,24 @@ public class CarParkingFogSimulation {
 			
 			createEdgeNodes(gateway.getId());
 			
-			for(int i=1; i<=NUMBER_OF_AREAS; i++) {
+			for(int i=0; i < NUMBER_OF_AREAS; i++) {
 				String areaName = String.format("area#%s", i);
-				FogDevice edgeNode = edgeNodes.get(i%NUMBER_OF_EDGE_NODES);
-				createArea(areaName, edgeNode.getId(), broker.getId(), appId);
+				int index = i%NUMBER_OF_EDGE_NODES;
+				System.out.println("EdgeNode index = " + index);
+				FogDevice edgeNode = edgeNodes.get(index);
+				System.out.println("EdgeNode id = " + edgeNode.getId());
+				addArea(areaName, broker.getId(), appId,  edgeNode.getId());
 			}
 
 			Controller controller = null;
 			
 			ModuleMapping moduleMapping = ModuleMapping.createModuleMapping(); // initializing a module mapping
 			for(FogDevice device : fogDevices){
-				moduleMapping.addModuleToDevice("motion_detector", device.getName());
+				if(device.getName().startsWith("camera")){ // names of all Smart Cameras start with 'm' 
+					moduleMapping.addModuleToDevice("motion_detector", device.getName());  // fixing 1 instance of the Motion Detector module to each Smart Camera
+				}
 			}
-
+			
 			moduleMapping.addModuleToDevice("user_interface", "cloud"); // fixing instances of User Interface module in the Cloud
 			if(CLOUD){
 				// if the mode of deployment is cloud-based
@@ -130,7 +137,7 @@ public class CarParkingFogSimulation {
 	}
 	
 	private static FogDevice createLocalGateway(int parentId) {
-		FogDevice proxy = createFogDevice("local-network-gataway", 2800, 4000, 10000, 10000,
+		FogDevice proxy = createFogDevice("proxy-server", 2800, 4000, 10000, 10000,
 				1, 4, 107.339, 83.4333);
 		proxy.setParentId(parentId);
 		proxy.setUplinkLatency(120); // latency of connection between GW and Cloud is 120 ms
@@ -139,34 +146,30 @@ public class CarParkingFogSimulation {
 	}
 	
 	private static void createEdgeNodes(int parentId) {
-		for (int i=1; i <= NUMBER_OF_EDGE_NODES; i++) {
+		for (int i=0; i < NUMBER_OF_EDGE_NODES; i++) {
 			FogDevice edgeNode = createEdgeNode("EdgeNode#"+i, parentId);
 			edgeNodes.add(edgeNode);
 		}
 	}
 	
-	private static void createArea(String areaName, int parentId, int userId, String appId) {
-		addArea(areaName, userId, appId, parentId);
-	}
-	
 	private static FogDevice createEdgeNode(String id, int parentId) {
 		FogDevice edgeNode = createFogDevice("edge-node-"+id, 2800, 4000, 10000, 10000,
 				1, 2, 107.339, 83.4333);
-		fogDevices.add(edgeNode);
 		edgeNode.setUplinkLatency(2); // latency of connection between edge node and gateway is 2 ms
 		edgeNode.setParentId(parentId);
+		fogDevices.add(edgeNode);
 		return edgeNode;
 	}
 
 	private static void addArea(String id, int userId, String appId, int edgeNodeId){
-		for(int i=1; i<=SENSORS_PER_AREA; i++){
+		for(int i=0; i< SENSORS_PER_AREA; i++){
 			String mobileId = id+"-"+i;
 			FogDevice irSensor = addIRSensor(mobileId, userId, appId, edgeNodeId); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
 			irSensor.setUplinkLatency(2); // latency of connection between IR-Sensor and edge node is 2 ms
 			fogDevices.add(irSensor);
 		}
 		
-		for(int i=1; i<=CAMERAS_PER_AREA; i++){
+		for(int i=0; i< CAMERAS_PER_AREA; i++){
 			String mobileId = id+"-"+i;
 			FogDevice camera = addNonPTZCamera(mobileId, userId, appId, edgeNodeId); // adding a smart camera to the physical topology. Smart cameras have been modeled as fog devices as well.
 			camera.setUplinkLatency(2); // latency of connection between camera and edge node is 2 ms
@@ -180,9 +183,12 @@ public class CarParkingFogSimulation {
 		irSensor.setParentId(parentId);
 		Sensor sensor = new Sensor("s-"+id, SensorType.IR_SENSOR.toString(), userId, appId, new DeterministicDistribution(5)); // inter-transmission time of camera (sensor) follows a deterministic distribution
 		sensors.add(sensor);
+		Actuator ptz = new Actuator("ptz-"+id, userId, appId, "PTZ_CONTROL");
+		actuators.add(ptz);
 		sensor.setGatewayDeviceId(irSensor.getId());
-		sensor.setLatency(1.0);  // latency of connection between IR Sensor and the parent Smart Camera is 1 ms
-		//irSensor.setTotalCost(1);
+		sensor.setLatency(1.0);  // latency of connection between IR Sensor and the parent Smart Camera is 1 ms;
+		ptz.setGatewayDeviceId(irSensor.getId());
+		ptz.setLatency(1.0);  // latency of connection between PTZ Control and the parent Smart Camera is 1 ms
 		return irSensor;
 	}
 	
@@ -192,42 +198,13 @@ public class CarParkingFogSimulation {
 		camera.setParentId(parentId);
 		Sensor sensor = new Sensor("s-"+id, SensorType.CAMERA.toString(), userId, appId, new DeterministicDistribution(5)); // inter-transmission time of camera (sensor) follows a deterministic distribution
 		sensors.add(sensor);
+		Actuator ptz = new Actuator("ptz-"+id, userId, appId, "PTZ_CONTROL");
+		actuators.add(ptz);
 		sensor.setGatewayDeviceId(camera.getId());
 		sensor.setLatency(1.0);  // latency of connection between camera (sensor) and the parent Smart Camera is 1 ms
+		ptz.setGatewayDeviceId(camera.getId());
+		ptz.setLatency(1.0);  // latency of connection between PTZ Control and the parent Smart Camera is 1 ms
 		return camera;
-	}
-
-	protected static FogDevice createFogDevice(String name, double mips, int ram, long strg, double bPw, double iPw, double costPerMips,
-			double costPerMem, double costPerStorage, double costPerBw) {
-		List<Pe> processingElementsList = new ArrayList<Pe>();
-		processingElementsList.add(new Pe(0, new PeProvisionerSimple(mips)));
-
-		PowerHost host = new PowerHost(
-				FogUtils.generateEntityId(),
-				new RamProvisionerSimple(ram),
-				new BwProvisionerSimple(Long.MAX_VALUE),
-				strg,
-				processingElementsList,
-				new VmSchedulerTimeSharedOverbookingEnergy(processingElementsList),
-				new FogLinearPowerModel(bPw, iPw)
-			);
-
-		List<Host> hostList = new ArrayList<Host>();
-		hostList.add(host);
-
-		FogDeviceCharacteristics characteristics = new FogDeviceCharacteristics(ArchType.x64,
-				OsType.Linux, VmmType.Xen, host, 0.0,
-				costPerMips, costPerMem, costPerStorage, costPerBw);
-		
-		try {
-			
-			return new FogDevice(name, characteristics, 
-					new AppModuleAllocationPolicy(hostList),
-					new LinkedList<Storage>(), 10, 0, 0, 0, costPerMips);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
 	}
 	
 	/**
@@ -306,6 +283,7 @@ public class CarParkingFogSimulation {
 		
 		Application application = Application.createApplication(appId, userId);
 
+		application.addAppModule("ir_detector", 10);
 		application.addAppModule("object_detector", 10);
 		application.addAppModule("motion_detector", 10);
 		application.addAppModule("object_tracker", 10);
@@ -314,7 +292,7 @@ public class CarParkingFogSimulation {
 		/*
 		 * Connecting the application modules (vertices) in the application model (directed graph) with edges
 		 */
-		application.addAppEdge(SensorType.IR_SENSOR.toString(), "motion_detector", 1000, 20000, SensorType.IR_SENSOR.toString(), Tuple.UP, AppEdge.SENSOR); // adding edge from CAMERA (sensor) to Motion Detector module carrying tuples of type CAMERA
+		application.addAppEdge(SensorType.IR_SENSOR.toString(), "ir_detector", 1000, 20000, SensorType.IR_SENSOR.toString(), Tuple.UP, AppEdge.SENSOR); // adding edge from CAMERA (sensor) to Motion Detector module carrying tuples of type CAMERA
 		application.addAppEdge(SensorType.CAMERA.toString(), "motion_detector", 1000, 20000, SensorType.CAMERA.toString(), Tuple.UP, AppEdge.SENSOR); // adding edge from CAMERA (sensor) to Motion Detector module carrying tuples of type CAMERA
 		application.addAppEdge("motion_detector", "object_detector", 2000, 2000, "MOTION_VIDEO_STREAM", Tuple.UP, AppEdge.MODULE); // adding edge from Motion Detector to Object Detector module carrying tuples of type MOTION_VIDEO_STREAM
 		application.addAppEdge("object_detector", "user_interface", 500, 2000, "DETECTED_OBJECT", Tuple.UP, AppEdge.MODULE); // adding edge from Object Detector to User Interface module carrying tuples of type DETECTED_OBJECT
@@ -323,6 +301,7 @@ public class CarParkingFogSimulation {
 		/*
 		 * Defining the input-output relationships (represented by selectivity) of the application modules. 
 		 */
+		application.addTupleMapping("ir_detector", SensorType.IR_SENSOR.toString(), "MOTION_VIDEO_STREAM", new FractionalSelectivity(1.0)); // 1.0 tuples of type MOTION_VIDEO_STREAM are emitted by Motion Detector module per incoming tuple of type CAMERA
 		application.addTupleMapping("motion_detector", SensorType.CAMERA.toString(), "MOTION_VIDEO_STREAM", new FractionalSelectivity(1.0)); // 1.0 tuples of type MOTION_VIDEO_STREAM are emitted by Motion Detector module per incoming tuple of type CAMERA
 		application.addTupleMapping("object_detector", "MOTION_VIDEO_STREAM", "OBJECT_LOCATION", new FractionalSelectivity(1.0)); // 1.0 tuples of type OBJECT_LOCATION are emitted by Object Detector module per incoming tuple of type MOTION_VIDEO_STREAM
 		application.addTupleMapping("object_detector", "MOTION_VIDEO_STREAM", "DETECTED_OBJECT", new FractionalSelectivity(0.05)); // 0.05 tuples of type MOTION_VIDEO_STREAM are emitted by Object Detector module per incoming tuple of type MOTION_VIDEO_STREAM
