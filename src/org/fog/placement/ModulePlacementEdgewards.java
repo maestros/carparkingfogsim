@@ -303,8 +303,21 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 				double cpuLoadShifted = 0;		// the total CPU load shifted from device id to its parent
 				for(String module : _modulesToShift){
 					if(!modulesToShift.contains(module)){
+						Map<String, Integer> moduleInstances = getCurrentModuleInstanceNum().get(id);
+						Integer numInstances = null;
+						if (moduleInstances != null) {
+							Integer moduleNum = moduleInstances.get(module);
+							if (moduleNum == null) {
+								continue;
+							}
+							
+							numInstances = moduleToNumInstances.get(module);
+							if (numInstances == null) {
+								numInstances = 0;
+							}
+						}
 						// Add information of all newly added modules (to be shifted) 
-						moduleToNumInstances.put(module, getCurrentModuleInstanceNum().get(id).get(module)+moduleToNumInstances.get(module));
+						moduleToNumInstances.put(module, getCurrentModuleInstanceNum().get(id).get(module)+numInstances);
 						loadMap.put(module, getCurrentModuleLoadMap().get(id).get(module));
 						cpuLoadShifted += getCurrentModuleLoadMap().get(id).get(module);
 						totalCpuLoad += getCurrentModuleLoadMap().get(id).get(module);

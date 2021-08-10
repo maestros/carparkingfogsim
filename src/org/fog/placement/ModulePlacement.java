@@ -48,8 +48,6 @@ public abstract class ModulePlacement {
 			module = _module;
 			
 		if(canBeCreated(device, module)){
-			System.out.println("Creating "+module.getName()+" on device "+device.getName());
-			
 			if(!getDeviceToModuleMap().containsKey(device.getId()))
 				getDeviceToModuleMap().put(device.getId(), new ArrayList<AppModule>());
 			getDeviceToModuleMap().get(device.getId()).add(module);
@@ -61,7 +59,6 @@ public abstract class ModulePlacement {
 		} else {
 			System.err.println("Module "+module.getName()+" cannot be created on device "+device.getName());
 			System.err.println("Terminating");
-			new Throwable().printStackTrace();
 			return false;
 		}
 	}

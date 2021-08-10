@@ -112,6 +112,11 @@ public class CarParkingFogSimulation {
 		Log.printLine(config);
 	}
 	
+	private static void createConfigurations() {
+		configs.put(ConfigName.CONFIG_1, new Configuration(3, 13, 14, 2, false) {});
+		
+	}
+	
 	public static void main(String[] args) {
 		
 		Log.printLine("Starting Car Parking FEC Simulation...");
@@ -136,7 +141,7 @@ public class CarParkingFogSimulation {
 			
 			createEdgeNodes(gateway.getId());
 			
-			for(int i=0; i < NUMBER_OF_AREAS; i++) {
+			for(int i=0; i < NUMBER_OF_EDGE_NODES; i++) {
 				String areaName = String.format("area#%s", i);
 				int index = i%NUMBER_OF_EDGE_NODES;
 				FogDevice edgeNode = edgeNodes.get(index);
@@ -147,11 +152,12 @@ public class CarParkingFogSimulation {
 			
 			ModuleMapping moduleMapping = ModuleMapping.createModuleMapping(); // initializing a module mapping
 			for(FogDevice device : fogDevices){
-				if(device.getName().startsWith("camera")){
-					moduleMapping.addModuleToDevice("motion_detector", device.getName());  // fixing 1 instance of the Motion Detector module to each Smart Camera
+				String deviceName = device.getName();
+				if(deviceName.startsWith("camera")){
+					moduleMapping.addModuleToDevice("motion_detector", deviceName);  // fixing 1 instance of the Motion Detector module to each Smart Camera
 				}
-				if(device.getName().startsWith("ir-sensor")){
-					moduleMapping.addModuleToDevice("ir_detector", device.getName());  // fixing 1 instance of the Motion Detector module to each Smart Camera
+				if(deviceName.startsWith("ir-sensor")){
+					moduleMapping.addModuleToDevice("ir_detector", deviceName);  // fixing 1 instance of the Motion Detector module to each Smart Camera
 				}
 			}
 			
@@ -164,10 +170,15 @@ public class CarParkingFogSimulation {
 
 			controller = new Controller("master-controller", fogDevices, sensors, actuators);
 			
-			controller.submitApplication(application, 
-					(CLOUD_BASED)?(new ModulePlacementMapping(fogDevices, application, moduleMapping))
-							:(new ModulePlacementEdgewards(fogDevices, sensors, actuators, application, moduleMapping)));
+			System.out.println("\n\n\n========Submitting application");
+			System.out.println("CLOUD_BASED="+CLOUD_BASED);
 			
+			if (CLOUD_BASED) {
+				controller.submitApplication(application, new ModulePlacementMapping(fogDevices, application, moduleMapping));	
+			} else {
+				controller.submitApplication(application, new ModulePlacementEdgewards(fogDevices, sensors, actuators, application, moduleMapping));	
+			}
+
 			TimeKeeper.getInstance().setSimulationStartTime(Calendar.getInstance().getTimeInMillis());
 			
 			CloudSim.startSimulation();
@@ -342,9 +353,9 @@ private static Application createApplication(String appId, int userId){
 		application.addAppModule("object_tracker", 10);
 		application.addAppModule("user_interface", 10);
 		
-		application.addAppModule("ir_detector", 10);
-		application.addAppModule("parking_space_detector", 10);
-		application.addAppModule("parking_space_tracker", 10);
+		application.addAppModule("ir_detector", 20);
+		application.addAppModule("parking_space_detector", 20);
+		application.addAppModule("parking_space_tracker", 20);
 		
 		/*
 		 * Connecting the application modules (vertices) in the application model (directed graph) with edges
@@ -392,10 +403,5 @@ private static Application createApplication(String appId, int userId){
 		
 		application.setLoops(loops);
 		return application;
-	}
-	
-	private static void createConfigurations() {
-		configs.put(ConfigName.CONFIG_1, new Configuration(3, 3, 20, 2, false) {});
-		
 	}
 }
