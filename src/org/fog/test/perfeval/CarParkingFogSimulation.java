@@ -2,8 +2,10 @@ package org.fog.test.perfeval;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.Log;
@@ -19,18 +21,21 @@ import org.fog.application.AppLoop;
 import org.fog.application.Application;
 import org.fog.application.selectivity.FractionalSelectivity;
 import org.fog.entities.Actuator;
+import org.fog.entities.ArchType;
 import org.fog.entities.FogBroker;
 import org.fog.entities.FogDevice;
 import org.fog.entities.FogDeviceCharacteristics;
+import org.fog.entities.OsType;
 import org.fog.entities.Sensor;
 import org.fog.entities.Tuple;
+import org.fog.entities.VmmType;
 import org.fog.placement.Controller;
 import org.fog.placement.ModuleMapping;
 import org.fog.placement.ModulePlacementEdgewards;
 import org.fog.placement.ModulePlacementMapping;
 import org.fog.policy.AppModuleAllocationPolicy;
 import org.fog.scheduler.StreamOperatorScheduler;
-import org.fog.test.perfeval.CarParkingFogSimulation.SensorType;
+import org.fog.entities.SensorType;
 import org.fog.utils.FogLinearPowerModel;
 import org.fog.utils.FogUtils;
 import org.fog.utils.TimeKeeper;
@@ -46,16 +51,45 @@ public class CarParkingFogSimulation {
 	private static List<Sensor> sensors = new ArrayList<Sensor>();
 	private static List<Actuator> actuators = new ArrayList<Actuator>();
 	private static List<FogDevice> edgeNodes = new ArrayList<FogDevice>();
+	private static Map<ConfigName, Configuration> configs = new HashMap<ConfigName, Configuration>();
 	
-	private static final int NUMBER_OF_EDGE_NODES = 3;
-	private static final int NUMBER_OF_AREAS = 4;
-	private static final int SENSORS_PER_AREA = 2;
-	private static final int CAMERAS_PER_AREA = 2;
+	private static final int NUMBER_OF_EDGE_NODES;
+	private static final int NUMBER_OF_AREAS;
+	private static final int SENSORS_PER_AREA;
+	private static final int CAMERAS_PER_AREA;
+	private static final boolean CLOUD_BASED;
+	
+	private static class Configuration {
+		private int edgeNodesCount;
+		private int areasCount;
+		private int sensorsPerArea;
+		private int camerasPerArea;
+		private boolean cloudBased;
+	}
+	
+	private enum ConfigName {
+		CONFIG_1,
+		CONFIG_2,
+		CONFIG_3,
+		CONFIG_4,
+		CONFIG_5;
+	}
+	
+	static {
+		createConfigurations();
+		// change the config name in the configs map
+		// in order to run a simulation with different configuration
+		Configuration config = configs.get(ConfigName.CONFIG_1);
 
-	private static final boolean CLOUD = false;
+		NUMBER_OF_EDGE_NODES = config.edgeNodesCount;
+		NUMBER_OF_AREAS = config.areasCount;
+		SENSORS_PER_AREA = config.sensorsPerArea;
+		CAMERAS_PER_AREA = config.camerasPerArea;
+		CLOUD_BASED = config.cloudBased;
+	}
 	
 	public static void main(String[] args) {
-
+		
 		Log.printLine("Starting Car Parking FEC Simulation...");
 
 		try {
@@ -100,7 +134,7 @@ public class CarParkingFogSimulation {
 			}
 			
 			moduleMapping.addModuleToDevice("user_interface", "cloud"); // fixing instances of User Interface module in the Cloud
-			if(CLOUD){
+			if(CLOUD_BASED){
 				// if the mode of deployment is cloud-based
 				moduleMapping.addModuleToDevice("object_detector", "cloud"); // placing all instances of Object Detector module in the Cloud
 				moduleMapping.addModuleToDevice("object_tracker", "cloud"); // placing all instances of Object Tracker module in the Cloud
@@ -109,7 +143,7 @@ public class CarParkingFogSimulation {
 			controller = new Controller("master-controller", fogDevices, sensors, actuators);
 			
 			controller.submitApplication(application, 
-					(CLOUD)?(new ModulePlacementMapping(fogDevices, application, moduleMapping))
+					(CLOUD_BASED)?(new ModulePlacementMapping(fogDevices, application, moduleMapping))
 							:(new ModulePlacementEdgewards(fogDevices, sensors, actuators, application, moduleMapping)));
 			
 			TimeKeeper.getInstance().setSimulationStartTime(Calendar.getInstance().getTimeInMillis());
@@ -338,63 +372,7 @@ private static Application createApplication(String appId, int userId){
 		return application;
 	}
 	
-	public enum SensorType {
-		CAMERA("CAMERA"),
-		IR_SENSOR("IR-SENSOR");
+	private static void createConfigurations() {
 		
-		private String name;
-		
-		SensorType(String sensorName) {
-			this.name = sensorName;
-		}
-		
-		public String toString() {
-			return name;
-		}
-	}
-	
-	public enum OsType {
-		Linux("linux"),
-		WINDOWS("WINDOWS");
-		
-		private String name;
-		
-		OsType(String osType) {
-			this.name = osType;
-		}
-		
-		public String toString() {
-			return name;
-		}
-	}
-	
-	public enum VmmType {
-		Xen("Xen"),
-		OPENSTACK("OpenStack");
-		
-		private String name;
-		
-		VmmType(String vmmType) {
-			this.name = vmmType;
-		}
-		
-		public String toString() {
-			return name;
-		}
-	}
-	
-	public enum ArchType {
-		x86("x86"),
-		x64("x64");
-		
-		private String name;
-		
-		ArchType(String archType) {
-			this.name = archType;
-		}
-		
-		public String toString() {
-			return name;
-		}
 	}
 }
