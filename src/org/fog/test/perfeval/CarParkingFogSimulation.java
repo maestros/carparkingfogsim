@@ -5,20 +5,15 @@ import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.sound.midi.Soundbank;
-
 import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Pe;
 import org.cloudbus.cloudsim.Storage;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.power.PowerHost;
-import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
-import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import org.cloudbus.cloudsim.sdn.overbooking.BwProvisionerOverbooking;
 import org.cloudbus.cloudsim.sdn.overbooking.PeProvisionerOverbooking;
-import org.cloudbus.cloudsim.sdn.overbooking.VmSchedulerTimeSharedOverbookingEnergy;
 import org.fog.application.AppEdge;
 import org.fog.application.AppLoop;
 import org.fog.application.Application;
@@ -35,9 +30,7 @@ import org.fog.placement.ModulePlacementEdgewards;
 import org.fog.placement.ModulePlacementMapping;
 import org.fog.policy.AppModuleAllocationPolicy;
 import org.fog.scheduler.StreamOperatorScheduler;
-import org.fog.test.perfeval.CarParkingFogSimulation.ArchType;
-import org.fog.test.perfeval.CarParkingFogSimulation.OsType;
-import org.fog.test.perfeval.CarParkingFogSimulation.VmmType;
+import org.fog.test.perfeval.CarParkingFogSimulation.SensorType;
 import org.fog.utils.FogLinearPowerModel;
 import org.fog.utils.FogUtils;
 import org.fog.utils.TimeKeeper;
@@ -98,8 +91,11 @@ public class CarParkingFogSimulation {
 			
 			ModuleMapping moduleMapping = ModuleMapping.createModuleMapping(); // initializing a module mapping
 			for(FogDevice device : fogDevices){
-				if(device.getName().startsWith("camera")){ // names of all Smart Cameras start with 'm' 
+				if(device.getName().startsWith("camera")){
 					moduleMapping.addModuleToDevice("motion_detector", device.getName());  // fixing 1 instance of the Motion Detector module to each Smart Camera
+				}
+				if(device.getName().startsWith("ir-sensor")){
+					moduleMapping.addModuleToDevice("ir_detector", device.getName());  // fixing 1 instance of the Motion Detector module to each Smart Camera
 				}
 			}
 			
@@ -279,40 +275,64 @@ public class CarParkingFogSimulation {
 	 * @return
 	 */
 	@SuppressWarnings({"serial" })
-	private static Application createApplication(String appId, int userId){
+private static Application createApplication(String appId, int userId){
 		
 		Application application = Application.createApplication(appId, userId);
-
-		application.addAppModule("ir_detector", 10);
+		/*
+		 * Adding modules (vertices) to the application model (directed graph)
+		 */
 		application.addAppModule("object_detector", 10);
 		application.addAppModule("motion_detector", 10);
 		application.addAppModule("object_tracker", 10);
 		application.addAppModule("user_interface", 10);
 		
+		application.addAppModule("ir_detector", 10);
+		application.addAppModule("parking_space_detector", 10);
+		application.addAppModule("parking_space_tracker", 10);
+		
 		/*
 		 * Connecting the application modules (vertices) in the application model (directed graph) with edges
 		 */
 		application.addAppEdge(SensorType.IR_SENSOR.toString(), "ir_detector", 1000, 20000, SensorType.IR_SENSOR.toString(), Tuple.UP, AppEdge.SENSOR); // adding edge from CAMERA (sensor) to Motion Detector module carrying tuples of type CAMERA
-		application.addAppEdge(SensorType.CAMERA.toString(), "motion_detector", 1000, 20000, SensorType.CAMERA.toString(), Tuple.UP, AppEdge.SENSOR); // adding edge from CAMERA (sensor) to Motion Detector module carrying tuples of type CAMERA
+		application.addAppEdge("CAMERA", "motion_detector", 1000, 20000, "CAMERA", Tuple.UP, AppEdge.SENSOR); // adding edge from CAMERA (sensor) to Motion Detector module carrying tuples of type CAMERA
+		application.addAppEdge("ir_detector", "parking_space_detector", 2000, 2000, "IR_STREAM", Tuple.UP, AppEdge.MODULE); // adding edge from Motion Detector to Object Detector module carrying tuples of type MOTION_VIDEO_STREAM
 		application.addAppEdge("motion_detector", "object_detector", 2000, 2000, "MOTION_VIDEO_STREAM", Tuple.UP, AppEdge.MODULE); // adding edge from Motion Detector to Object Detector module carrying tuples of type MOTION_VIDEO_STREAM
 		application.addAppEdge("object_detector", "user_interface", 500, 2000, "DETECTED_OBJECT", Tuple.UP, AppEdge.MODULE); // adding edge from Object Detector to User Interface module carrying tuples of type DETECTED_OBJECT
 		application.addAppEdge("object_detector", "object_tracker", 1000, 100, "OBJECT_LOCATION", Tuple.UP, AppEdge.MODULE); // adding edge from Object Detector to Object Tracker module carrying tuples of type OBJECT_LOCATION
+		application.addAppEdge("object_tracker", "PTZ_CONTROL", 100, 28, 100, "PTZ_PARAMS", Tuple.DOWN, AppEdge.ACTUATOR); // adding edge from Object Tracker to PTZ CONTROL (actuator) carrying tuples of type PTZ_PARAMS
 		
 		/*
 		 * Defining the input-output relationships (represented by selectivity) of the application modules. 
 		 */
-		application.addTupleMapping("ir_detector", SensorType.IR_SENSOR.toString(), "MOTION_VIDEO_STREAM", new FractionalSelectivity(1.0)); // 1.0 tuples of type MOTION_VIDEO_STREAM are emitted by Motion Detector module per incoming tuple of type CAMERA
-		application.addTupleMapping("motion_detector", SensorType.CAMERA.toString(), "MOTION_VIDEO_STREAM", new FractionalSelectivity(1.0)); // 1.0 tuples of type MOTION_VIDEO_STREAM are emitted by Motion Detector module per incoming tuple of type CAMERA
+		application.addTupleMapping("ir_detector", SensorType.IR_SENSOR.toString(), "IR_STREAM", new FractionalSelectivity(1.0)); // 1.0 tuples of type MOTION_VIDEO_STREAM are emitted by Motion Detector module per incoming tuple of type CAMERA
+		application.addTupleMapping("motion_detector", "CAMERA", "MOTION_VIDEO_STREAM", new FractionalSelectivity(1.0)); // 1.0 tuples of type MOTION_VIDEO_STREAM are emitted by Motion Detector module per incoming tuple of type CAMERA
 		application.addTupleMapping("object_detector", "MOTION_VIDEO_STREAM", "OBJECT_LOCATION", new FractionalSelectivity(1.0)); // 1.0 tuples of type OBJECT_LOCATION are emitted by Object Detector module per incoming tuple of type MOTION_VIDEO_STREAM
 		application.addTupleMapping("object_detector", "MOTION_VIDEO_STREAM", "DETECTED_OBJECT", new FractionalSelectivity(0.05)); // 0.05 tuples of type MOTION_VIDEO_STREAM are emitted by Object Detector module per incoming tuple of type MOTION_VIDEO_STREAM
-	
+		application.addTupleMapping("parking_space_detector", SensorType.IR_SENSOR.toString(), "IR_STREAM", new FractionalSelectivity(1.0)); // 1.0 tuples of type MOTION_VIDEO_STREAM are emitted by Motion Detector module per incoming tuple of type CAMERA
+
 		/*
 		 * Defining application loops (maybe incomplete loops) to monitor the latency of. 
 		 * Here, we add two loops for monitoring : Motion Detector -> Object Detector -> Object Tracker and Object Tracker -> PTZ Control
 		 */
-		final AppLoop loop1 = new AppLoop(new ArrayList<String>(){{add("motion_detector");add("object_detector");add("object_tracker");}});
-		final AppLoop loop2 = new AppLoop(new ArrayList<String>(){{add("object_tracker");add("PTZ_CONTROL");}});
-		List<AppLoop> loops = new ArrayList<AppLoop>(){{add(loop1);add(loop2);}};
+		final AppLoop loop1 = new AppLoop(new ArrayList<String>() {
+			{
+				add("motion_detector");
+				add("object_detector");
+				add("object_tracker");
+			}
+		});
+		final AppLoop loop2 = new AppLoop(new ArrayList<String>() {
+			{
+				add("ir_detector");
+				add("parking_space_detector");
+			}
+		});
+		List<AppLoop> loops = new ArrayList<AppLoop>() {
+			{
+				add(loop1);
+				add(loop2);
+			}
+		};
 		
 		application.setLoops(loops);
 		return application;

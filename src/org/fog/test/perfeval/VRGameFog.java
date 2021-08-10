@@ -47,7 +47,7 @@ public class VRGameFog {
 	
 	static boolean CLOUD = false;
 	
-	static int numOfDepts = 4;
+	static int numOfDepts = 14;
 	static int numOfMobilesPerDept = 6;
 	static double EEG_TRANSMISSION_TIME = 5.1;
 	//static double EEG_TRANSMISSION_TIME = 10;
