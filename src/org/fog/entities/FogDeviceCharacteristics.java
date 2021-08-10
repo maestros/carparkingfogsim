@@ -16,9 +16,6 @@ import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.lists.HostList;
 import org.cloudbus.cloudsim.lists.PeList;
-import org.fog.test.perfeval.CarParkingFogSimulation.ArchType;
-import org.fog.test.perfeval.CarParkingFogSimulation.OsType;
-import org.fog.test.perfeval.CarParkingFogSimulation.VmmType;
 import org.fog.utils.GeoCoverage;
 
 public class FogDeviceCharacteristics extends DatacenterCharacteristics{

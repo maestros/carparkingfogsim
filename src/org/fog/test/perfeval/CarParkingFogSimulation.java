@@ -60,11 +60,31 @@ public class CarParkingFogSimulation {
 	private static final boolean CLOUD_BASED;
 	
 	private static class Configuration {
-		private int edgeNodesCount;
-		private int areasCount;
-		private int sensorsPerArea;
-		private int camerasPerArea;
-		private boolean cloudBased;
+		int edgeNodesCount;
+		int areasCount;
+		int sensorsPerArea;
+		int camerasPerArea;
+		boolean cloudBased;
+		
+		Configuration(int edgeNodesCount, int areasCount,
+				int sensorsPerArea, int camerasPerArea, boolean cloudBased) {
+			this.edgeNodesCount = edgeNodesCount;
+			this.areasCount = areasCount;
+			this.sensorsPerArea = sensorsPerArea;
+			this.camerasPerArea = camerasPerArea;
+			this.cloudBased = cloudBased;
+		}
+		
+		@Override
+		public String toString() {
+			StringBuilder str = new StringBuilder();
+			str.append("edgeNodesCount=").append(edgeNodesCount).append("\n");
+			str.append("areasCount=").append(areasCount).append("\n");
+			str.append("sensorsPerArea=").append(sensorsPerArea).append("\n");
+			str.append("camerasPerArea=").append(camerasPerArea).append("\n");
+			str.append("cloudBased=").append(cloudBased).append("\n");
+			return str.toString();
+		}
 	}
 	
 	private enum ConfigName {
@@ -76,6 +96,7 @@ public class CarParkingFogSimulation {
 	}
 	
 	static {
+		Log.printLine("Loading Simulation Configuration...");
 		createConfigurations();
 		// change the config name in the configs map
 		// in order to run a simulation with different configuration
@@ -86,6 +107,9 @@ public class CarParkingFogSimulation {
 		SENSORS_PER_AREA = config.sensorsPerArea;
 		CAMERAS_PER_AREA = config.camerasPerArea;
 		CLOUD_BASED = config.cloudBased;
+		
+		Log.printLine("Loaded Simulation Configuration:");
+		Log.printLine(config);
 	}
 	
 	public static void main(String[] args) {
@@ -115,9 +139,7 @@ public class CarParkingFogSimulation {
 			for(int i=0; i < NUMBER_OF_AREAS; i++) {
 				String areaName = String.format("area#%s", i);
 				int index = i%NUMBER_OF_EDGE_NODES;
-				System.out.println("EdgeNode index = " + index);
 				FogDevice edgeNode = edgeNodes.get(index);
-				System.out.println("EdgeNode id = " + edgeNode.getId());
 				addArea(areaName, broker.getId(), appId,  edgeNode.getId());
 			}
 
@@ -373,6 +395,7 @@ private static Application createApplication(String appId, int userId){
 	}
 	
 	private static void createConfigurations() {
+		configs.put(ConfigName.CONFIG_1, new Configuration(3, 3, 20, 2, false) {});
 		
 	}
 }

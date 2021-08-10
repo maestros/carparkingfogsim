@@ -30,7 +30,6 @@ import org.fog.placement.ModulePlacementEdgewards;
 import org.fog.placement.ModulePlacementMapping;
 import org.fog.policy.AppModuleAllocationPolicy;
 import org.fog.scheduler.StreamOperatorScheduler;
-import org.fog.test.perfeval.CarParkingFogSimulation.SensorType;
 import org.fog.utils.FogLinearPowerModel;
 import org.fog.utils.FogUtils;
 import org.fog.utils.TimeKeeper;
@@ -236,55 +235,29 @@ public class DCNSFog {
 		application.addAppModule("object_tracker", 10);
 		application.addAppModule("user_interface", 10);
 		
-		application.addAppModule("ir_detector", 10);
-		application.addAppModule("parking_space_detector", 10);
-		application.addAppModule("parking_space_tracker", 10);
-		
 		/*
 		 * Connecting the application modules (vertices) in the application model (directed graph) with edges
 		 */
-		application.addAppEdge(SensorType.IR_SENSOR.toString(), "ir_detector", 1000, 20000, SensorType.IR_SENSOR.toString(), Tuple.UP, AppEdge.SENSOR); // adding edge from CAMERA (sensor) to Motion Detector module carrying tuples of type CAMERA
 		application.addAppEdge("CAMERA", "motion_detector", 1000, 20000, "CAMERA", Tuple.UP, AppEdge.SENSOR); // adding edge from CAMERA (sensor) to Motion Detector module carrying tuples of type CAMERA
-		application.addAppEdge("ir_detector", "parking_space_detector", 2000, 2000, "IR_STREAM", Tuple.UP, AppEdge.MODULE); // adding edge from Motion Detector to Object Detector module carrying tuples of type MOTION_VIDEO_STREAM
 		application.addAppEdge("motion_detector", "object_detector", 2000, 2000, "MOTION_VIDEO_STREAM", Tuple.UP, AppEdge.MODULE); // adding edge from Motion Detector to Object Detector module carrying tuples of type MOTION_VIDEO_STREAM
 		application.addAppEdge("object_detector", "user_interface", 500, 2000, "DETECTED_OBJECT", Tuple.UP, AppEdge.MODULE); // adding edge from Object Detector to User Interface module carrying tuples of type DETECTED_OBJECT
 		application.addAppEdge("object_detector", "object_tracker", 1000, 100, "OBJECT_LOCATION", Tuple.UP, AppEdge.MODULE); // adding edge from Object Detector to Object Tracker module carrying tuples of type OBJECT_LOCATION
 		application.addAppEdge("object_tracker", "PTZ_CONTROL", 100, 28, 100, "PTZ_PARAMS", Tuple.DOWN, AppEdge.ACTUATOR); // adding edge from Object Tracker to PTZ CONTROL (actuator) carrying tuples of type PTZ_PARAMS
-		application.addAppEdge("parking_space_detector", "parking_space_tracker", 1000, 100, "PARKING_SPACE_STATUS", Tuple.UP, AppEdge.MODULE); // adding edge from Object Detector to Object Tracker module carrying tuples of type OBJECT_LOCATION
-
 		
 		/*
 		 * Defining the input-output relationships (represented by selectivity) of the application modules. 
 		 */
-		application.addTupleMapping("ir_detector", SensorType.IR_SENSOR.toString(), "IR_STREAM", new FractionalSelectivity(1.0)); // 1.0 tuples of type MOTION_VIDEO_STREAM are emitted by Motion Detector module per incoming tuple of type CAMERA
 		application.addTupleMapping("motion_detector", "CAMERA", "MOTION_VIDEO_STREAM", new FractionalSelectivity(1.0)); // 1.0 tuples of type MOTION_VIDEO_STREAM are emitted by Motion Detector module per incoming tuple of type CAMERA
 		application.addTupleMapping("object_detector", "MOTION_VIDEO_STREAM", "OBJECT_LOCATION", new FractionalSelectivity(1.0)); // 1.0 tuples of type OBJECT_LOCATION are emitted by Object Detector module per incoming tuple of type MOTION_VIDEO_STREAM
 		application.addTupleMapping("object_detector", "MOTION_VIDEO_STREAM", "DETECTED_OBJECT", new FractionalSelectivity(0.05)); // 0.05 tuples of type MOTION_VIDEO_STREAM are emitted by Object Detector module per incoming tuple of type MOTION_VIDEO_STREAM
-		application.addTupleMapping("parking_space_detector", SensorType.IR_SENSOR.toString(), "IR_STREAM", new FractionalSelectivity(1.0)); // 1.0 tuples of type MOTION_VIDEO_STREAM are emitted by Motion Detector module per incoming tuple of type CAMERA
-
+	
 		/*
 		 * Defining application loops (maybe incomplete loops) to monitor the latency of. 
 		 * Here, we add two loops for monitoring : Motion Detector -> Object Detector -> Object Tracker and Object Tracker -> PTZ Control
 		 */
-		final AppLoop loop1 = new AppLoop(new ArrayList<String>() {
-			{
-				add("motion_detector");
-				add("object_detector");
-				add("object_tracker");
-			}
-		});
-		final AppLoop loop2 = new AppLoop(new ArrayList<String>() {
-			{
-				add("ir_detector");
-				add("parking_space_detector");
-			}
-		});
-		List<AppLoop> loops = new ArrayList<AppLoop>() {
-			{
-				add(loop1);
-				add(loop2);
-			}
-		};
+		final AppLoop loop1 = new AppLoop(new ArrayList<String>(){{add("motion_detector");add("object_detector");add("object_tracker");}});
+		final AppLoop loop2 = new AppLoop(new ArrayList<String>(){{add("object_tracker");add("PTZ_CONTROL");}});
+		List<AppLoop> loops = new ArrayList<AppLoop>(){{add(loop1);add(loop2);}};
 		
 		application.setLoops(loops);
 		return application;

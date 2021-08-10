@@ -75,7 +75,7 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 		
 		for(int deviceId : getCurrentModuleMap().keySet()){
 			for(String module : getCurrentModuleMap().get(deviceId)){
-				System.out.println("Mapping module:"+module);
+				Logger.debug("ModulePlacementEdgeward", "Mapping module:"+module);
 				createModuleInstanceOnDevice(getApplication().getModuleByName(module), getFogDeviceById(deviceId));
 			}
 		}
@@ -221,9 +221,9 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 					// FINDING OUT WHETHER PLACEMENT OF OPERATOR ON DEVICE IS POSSIBLE
 					for(AppEdge edge : getApplication().getEdges()){		// take all incoming edges
 						if(edge.getDestination().equals(moduleName)){
-							System.out.println("Getting edge for module: " + moduleName);
-							System.out.println("appEdgeToRate="+appEdgeToRate);
-							System.out.println("edge="+edge);
+							Logger.debug("ModulePlacementEdgeward", "Getting edge for module: " + moduleName);
+							Logger.debug("ModulePlacementEdgeward", "appEdgeToRate="+appEdgeToRate);
+							Logger.debug("ModulePlacementEdgeward", "edge="+edge);
 							double rate = appEdgeToRate.get(edge);
 							totalCpuLoad += rate*edge.getTupleCpuLength();
 						}
