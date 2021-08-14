@@ -53,6 +53,9 @@ public class CarParkingFogSimulation {
 	private static List<FogDevice> edgeNodes = new ArrayList<FogDevice>();
 	private static Map<ConfigName, Configuration> configs = new HashMap<ConfigName, Configuration>();
 	
+	private static final int NUMBER_OF_FLOORS = 3;
+	private static final int NUMBER_OF_AREAS_PER_FLOOR = 2;
+	
 	private static final int NUMBER_OF_EDGE_NODES;
 	private static final int NUMBER_OF_AREAS;
 	private static final int SENSORS_PER_AREA;
@@ -102,6 +105,7 @@ public class CarParkingFogSimulation {
 		// in order to run a simulation with different configuration
 		Configuration config = configs.get(ConfigName.CONFIG_1);
 
+		// now load the selected configuration
 		NUMBER_OF_EDGE_NODES = config.edgeNodesCount;
 		NUMBER_OF_AREAS = config.areasCount;
 		SENSORS_PER_AREA = config.sensorsPerArea;
@@ -113,8 +117,40 @@ public class CarParkingFogSimulation {
 	}
 	
 	private static void createConfigurations() {
-		configs.put(ConfigName.CONFIG_1, new Configuration(3, 13, 14, 2, false) {});
 		
+		/* Config 1
+		   Three edge nodes (one for each floor). All sensors of each floor are connected to the
+		   floor’s edge node, which is connected to the single local Internet router / gateway.
+		*/
+		configs.put(ConfigName.CONFIG_1,
+				new Configuration(3, NUMBER_OF_FLOORS*NUMBER_OF_AREAS_PER_FLOOR, 15, 2, false) {});
+		
+		/* Config 2
+		   Single edge node for all 90 sensors of all 5 floors connected to the single local Internet
+		   router / gateway.
+		 */
+		configs.put(ConfigName.CONFIG_2,
+				new Configuration(1, NUMBER_OF_FLOORS*NUMBER_OF_AREAS_PER_FLOOR, 15, 2, false) {});
+		
+		/* Config 3
+		   Same as Config 1 but all sensors are connected directly to the Cloud via the local Internet
+		   router / gateway.
+		 */
+		configs.put(ConfigName.CONFIG_3,
+				new Configuration(3, NUMBER_OF_FLOORS*NUMBER_OF_AREAS_PER_FLOOR, 15, 2, true) {});
+		
+		/* Config 4
+		   Same as Config 2 but all sensors are connected directly to the Cloud via the local Internet
+		   router / gateway.
+		 */
+		configs.put(ConfigName.CONFIG_4,
+				new Configuration(1, NUMBER_OF_FLOORS*NUMBER_OF_AREAS_PER_FLOOR, 15, 2, true) {});
+		
+		/* Config 5
+		   Increased number of sensors in each area. Specifically, from 15 sensors to 18 sensors.
+		 */
+		configs.put(ConfigName.CONFIG_5,
+				new Configuration(3, NUMBER_OF_FLOORS*NUMBER_OF_AREAS_PER_FLOOR, 18, 2, false) {});
 	}
 	
 	public static void main(String[] args) {
@@ -141,7 +177,7 @@ public class CarParkingFogSimulation {
 			
 			createEdgeNodes(gateway.getId());
 			
-			for(int i=0; i < NUMBER_OF_EDGE_NODES; i++) {
+			for(int i=0; i < NUMBER_OF_AREAS; i++) {
 				String areaName = String.format("area#%s", i);
 				int index = i%NUMBER_OF_EDGE_NODES;
 				FogDevice edgeNode = edgeNodes.get(index);
@@ -169,9 +205,6 @@ public class CarParkingFogSimulation {
 			}
 
 			controller = new Controller("master-controller", fogDevices, sensors, actuators);
-			
-			System.out.println("\n\n\n========Submitting application");
-			System.out.println("CLOUD_BASED="+CLOUD_BASED);
 			
 			if (CLOUD_BASED) {
 				controller.submitApplication(application, new ModulePlacementMapping(fogDevices, application, moduleMapping));	
