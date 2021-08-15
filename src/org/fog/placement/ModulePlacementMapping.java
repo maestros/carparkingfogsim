@@ -23,7 +23,6 @@ public class ModulePlacementMapping extends ModulePlacement{
 				if(module == null)
 					continue;
 				createModuleInstanceOnDevice(module, device);
-				//getModuleInstanceCountMap().get(device.getId()).put(moduleName, mapping.get(deviceName).get(moduleName));
 			}
 		}
 	}

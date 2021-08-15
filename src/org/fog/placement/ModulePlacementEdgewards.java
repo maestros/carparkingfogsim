@@ -235,8 +235,6 @@ public class ModulePlacementEdgewards extends ModulePlacement{
 					else{
 						Logger.debug("ModulePlacementEdgeward", "Placement of operator "+moduleName+ " on device "+device.getName() + " successful.");
 						getCurrentCpuLoad().put(deviceId, totalCpuLoad + getCurrentCpuLoad().get(deviceId));
-						System.out.println("Placement of operator "+moduleName+ " on device "+device.getName() + " successful.");
-
 						if(!currentModuleMap.containsKey(deviceId))
 							currentModuleMap.put(deviceId, new ArrayList<String>());
 						currentModuleMap.get(deviceId).add(moduleName);

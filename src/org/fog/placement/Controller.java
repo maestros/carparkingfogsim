@@ -28,8 +28,6 @@ public class Controller extends SimEntity{
 	private static final String NEWLINE = "\n";
 	private static final String COLUMN_SEPERATOR = "|";
 	private static final int MATRIX_SIZE = 83;
-
-	public static boolean ONLY_CLOUD = false;
 		
 	private List<FogDevice> fogDevices;
 	private List<Sensor> sensors;
