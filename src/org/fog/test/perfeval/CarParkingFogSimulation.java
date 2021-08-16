@@ -55,7 +55,7 @@ public class CarParkingFogSimulation {
 
 	// The Configuration to use for the simulation
 	// Change the config name in order to run a simulation with different configuration
-	private static final ConfigName CONFIG_NAME = ConfigName.CONFIG_1;
+	private static final ConfigName CONFIG_NAME = ConfigName.CONFIG_3;
 	
 	private static final int NUMBER_OF_AREAS;
 	private static final int SENSORS_PER_AREA;
@@ -63,7 +63,6 @@ public class CarParkingFogSimulation {
 	private static final boolean CLOUD_BASED;
 	
 	private static class Configuration {
-		int edgeNodesCount;
 		int areasCount;
 		int sensorsPerArea;
 		int camerasPerArea;
@@ -80,7 +79,6 @@ public class CarParkingFogSimulation {
 		@Override
 		public String toString() {
 			StringBuilder str = new StringBuilder();
-			str.append("edgeNodesCount=").append(edgeNodesCount).append("\n");
 			str.append("areasCount=").append(areasCount).append("\n");
 			str.append("sensorsPerArea=").append(sensorsPerArea).append("\n");
 			str.append("camerasPerArea=").append(camerasPerArea).append("\n");
