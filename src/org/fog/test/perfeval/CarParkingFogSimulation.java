@@ -55,7 +55,7 @@ public class CarParkingFogSimulation {
 
 	// The Configuration to use for the simulation
 	// Change the config name in order to run a simulation with different configuration
-	private static final ConfigName CONFIG_NAME = ConfigName.CONFIG_6;
+	private static final ConfigName CONFIG_NAME = ConfigName.CONFIG_1;
 	
 	private static final int NUMBER_OF_AREAS;
 	private static final int SENSORS_PER_AREA;
@@ -262,6 +262,7 @@ public class CarParkingFogSimulation {
 		double ratePerMips = 0.05;
 		FogDevice gateway = createFogDevice("gateway-server", mips, 4000, 10000, 10000, level,
 				ratePerMips, 107.339, 83.4333);
+		gateway.setTotalCost(10000);
 		gateway.setParentId(parentId);
 		gateway.setUplinkLatency(120); // latency of connection between GW and Cloud is 120 ms
 		FOG_DEVICES.add(gateway);
