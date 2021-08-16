@@ -45,7 +45,7 @@ import org.fog.utils.distribution.DeterministicDistribution;
 /**
  * Simulation setup for the FEC-based car parking system
  * @author Apostolos Giannakidis
- *
+ * @
  */
 public class CarParkingFogSimulation {
 	private static final List<FogDevice> FOG_DEVICES = new ArrayList<FogDevice>();
@@ -124,28 +124,28 @@ public class CarParkingFogSimulation {
 		   Cameras per area: 2
 		*/
 		CONFIGS.put(ConfigName.CONFIG_1,
-				new Configuration(3, 5, 2, false) {});
+				new Configuration(5, 5, 2, false) {});
 		
-		/* Config 2
-		   Areas: 10
-		   Edge nodes: 10
-		   Sensors per area: 5
-		   Cameras per area: 2
-		 */
-		CONFIGS.put(ConfigName.CONFIG_2,
-				new Configuration(10, 5, 2, false) {});
-		
-		/* Config 3 - Same as Config 1 but all sensors/cameras are connected directly to the Cloud
+		/* Config 2 - Same as Config 1 but all sensors/cameras are connected directly to the Cloud
 		   via the local Internet gateway.
 		   Areas: 5
 		   Edge nodes: 0
 		   Sensors per area: 5
 		   Cameras per area: 2
 		 */
-		CONFIGS.put(ConfigName.CONFIG_3,
+		CONFIGS.put(ConfigName.CONFIG_2,
 				new Configuration(5, 5, 2, true) {});
 
-		/* Config 4 - Same as Config 2 but all sensors/cameras are connected directly to the Cloud
+		/* Config 3
+		   Areas: 10
+		   Edge nodes: 10
+		   Sensors per area: 5
+		   Cameras per area: 2
+		 */
+		CONFIGS.put(ConfigName.CONFIG_3,
+				new Configuration(10, 5, 2, false) {});
+		
+		/* Config 4 - Same as Config 3 but all sensors/cameras are connected directly to the Cloud
 		   via the local Internet gateway.
 		   Areas: 10
 		   Edge nodes: 0
@@ -157,14 +157,14 @@ public class CarParkingFogSimulation {
 
 		/* Config 5 - Increased number of sensors/cameras in each area.
 		   Areas: 10
-		   Edge nodes: 0
+		   Edge nodes: 10
 		   Sensors per area: 10
 		   Cameras per area: 4
 		 */
 		CONFIGS.put(ConfigName.CONFIG_5,
 				new Configuration(10, 8, 4, false) {});
 		
-		/* Config 5 - Same as Config 5 but all sensors/cameras are connected directly to the Cloud
+		/* Config 6 - Same as Config 5 but all sensors/cameras are connected directly to the Cloud
 		   via the local Internet gateway.
 		   Areas: 10
 		   Edge nodes: 0
