@@ -55,7 +55,7 @@ public class CarParkingFogSimulation {
 
 	// The Configuration to use for the simulation
 	// Change the config name in order to run a simulation with different configuration
-	private static final ConfigName CONFIG_NAME = ConfigName.CONFIG_3;
+	private static final ConfigName CONFIG_NAME = ConfigName.CONFIG_1;
 	
 	private static final int NUMBER_OF_AREAS;
 	private static final int SENSORS_PER_AREA;
