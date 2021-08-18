@@ -16,7 +16,7 @@ iFogSim is an open-source Toolkit for Modeling and Simulation of Resource Manage
 ```
 git clone https://github.com/maestros/carparkingfogsim.git
 ```
-* Open Eclipse and import the carparkingfogsim Java project into Eclipse.
+* Open Eclipse and import the carparkingfogsim Java project into Eclipse. **Note:** Make sure you import the Eclipse project into Eclipse, rather than creating a new Eclipse project.
 * If needed, include the JARs (except the CloudSim ones) to the buildpath of the Eclipse project.  
 
 # How to run the Car Parking Fog simulation?
