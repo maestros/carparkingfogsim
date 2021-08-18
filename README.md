@@ -1,32 +1,47 @@
-# iFogSim
-A Toolkit for Modeling and Simulation of Resource Management Techniques in Internet of Things, Edge and Fog Computing Environments
+# Car Parking System Fog Simulation based on iFogSim
+This repository stores the source code of the simulation that was implemented
+for the Fog and Edge Computing module of the Cloud Computing postgraduade course at the National College of Ireland.
 
-# iFogSim Tutorial Examples
- Access from <A href="https://github.com/Cloudslab/iFogSimTutorials">https://github.com/Cloudslab/iFogSimTutorials</A>
+This simulation is based on iFogSim.
 
-## IMPORTANT
-Please check the `improv` branch for latest changes. Master branch has been left intact until complete testing.
+iFogSim is an open-source Toolkit for Modeling and Simulation of Resource Management Techniques in Internet of Things, Edge and Fog Computing Environments.
 
-## How to run iFogSim ?
+# Prerequsites
+ * Git
+ * Java 8
+ * Eclipse
 
-* Create a Java project in Eclipse. 
-* Inside the project directory, initialize an empty Git repository with the following command
+# How to run iFogSim ?
+* Clone this repository:
 ```
-git init
+git clone https://github.com/maestros/carparkingfogsim.git
 ```
-* Add the Git repository of iFogSim as the `origin` remote.
-```
-git remote add origin https://github.com/Cloudslab/iFogSim
-```
-* Pull the contents of the repository to your machine.
-```
-git pull origin master
-```
-* Include the JARs (except the CloudSim ones) to your Eclipse project.  
-* Run the example files (e.g. VRGame.java) to get started. 
+* Open Eclipse and import the carparkingfogsim Java project into Eclipse.
+* If needed, include the JARs (except the CloudSim ones) to the buildpath of the Eclipse project.  
+* Run the `main` method of the `org.fog.test.perfeval.CarParkingFogSimulation` class.
 
-# References
-1. Harshit Gupta, Amir Vahid Dastjerdi , Soumya K. Ghosh, and Rajkumar Buyya, <A href="http://www.buyya.com/papers/iFogSim.pdf">iFogSim: A Toolkit for Modeling and Simulation of Resource Management Techniques in Internet of Things, Edge and Fog Computing Environments</A>, Software: Practice and Experience (SPE), Volume 47, Issue 9, Pages: 1275-1296, ISSN: 0038-0644, Wiley Press, New York, USA, September 2017.
+# How to change simulation configuration
+The `CarParkingFogSimulation` class contains a constant named `CONFIG_NAME`. The possible values of this constant are:
+```
+ConfigName.CONFIG_1
+ConfigName.CONFIG_2
+ConfigName.CONFIG_3
+ConfigName.CONFIG_4
+ConfigName.CONFIG_5
+ConfigName.CONFIG_6
+```
+Each of these configuration names corresponds to one of the pre-defined configurations, as described in the project report.
+To run a different configuration, change the value of the `CONFIG_NAME` and re-run the `main` method of the `CarParkingFogSimulation` class.
 
-2. Redowan Mahmud and Rajkumar Buyya, <A href="http://www.buyya.com/papers/iFogSim-Tut.pdf">Modelling and Simulation of Fog and Edge Computing Environments using iFogSim Toolkit</A>, Fog and Edge Computing: Principles and Paradigms, R. Buyya and S. Srirama (eds), 433-466pp, ISBN: 978-111-95-2498-4, Wiley Press, New York, USA, January 2019.
+Read the project report for more information on the pre-defined configurations.
 
+# Project Report
+At the root of this repository you will find the file `x20124066_FEC_CA_Apostolos_Giannakidis.pdf`
+that fully documents the project and the results of the simulation.
+
+# Credits
+Apostolos Giannakidis, x20124066@student.ncirl.ie
+
+PGDCLOUD, School of Computing
+
+National College of Ireland, Dublin 
