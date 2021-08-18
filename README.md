@@ -11,14 +11,19 @@ iFogSim is an open-source Toolkit for Modeling and Simulation of Resource Manage
  * Java 8
  * Eclipse
 
-# How to run iFogSim ?
+# How to install iFogSim and the simulation?
 * Clone this repository:
 ```
 git clone https://github.com/maestros/carparkingfogsim.git
 ```
 * Open Eclipse and import the carparkingfogsim Java project into Eclipse.
 * If needed, include the JARs (except the CloudSim ones) to the buildpath of the Eclipse project.  
-* Run the `main` method of the `org.fog.test.perfeval.CarParkingFogSimulation` class.
+
+# How to run the Car Parking Fog simulation?
+For the requirements of this simulation, the class `org.fog.test.perfeval.CarParkingFogSimulation` was created.
+Additionally, many files of the iFogSim were modified for bug fixes and improvements. Thus, the `CarParkingFogSimulation` must run on the modified version of iFogSim that is hosted in this repository. **Important:** Do not copy and run the  `org.fog.test.perfeval.CarParkingFogSimulation` class in a vanilla iFogSim installation.
+
+* Run the `main` method of the `org.fog.test.perfeval.CarParkingFogSimulation` class, using the modified iFogSim that is hosted in this repository.
 
 # How to change simulation configuration
 The `CarParkingFogSimulation` class contains a constant named `CONFIG_NAME`. The possible values of this constant are:
