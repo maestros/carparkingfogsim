@@ -44,6 +44,9 @@ Read the project report for more information on the pre-defined configurations.
 At the root of this repository you will find the file `x20124066_FEC_CA_Apostolos_Giannakidis.pdf`
 that fully documents the project and the results of the simulation.
 
+# Video Presentation
+YouTube: https://youtu.be/78b7G2xbilU
+
 # Credits
 Apostolos Giannakidis, x20124066@student.ncirl.ie
 
